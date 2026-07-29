@@ -1,0 +1,436 @@
+
+:root {
+  font-family:
+    Inter, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+
+  --page-background: #f2f5f8;
+  --surface: #ffffff;
+  --surface-secondary: #f6f8fa;
+  --surface-hover: #eaf2f8;
+
+  --text-primary: #17212b;
+  --text-secondary: #52616d;
+  --text-muted: #7d8b96;
+
+  --border: #d3dce3;
+  --border-strong: #aebdca;
+
+  --accent: #006eb8;
+  --accent-hover: #005a96;
+  --accent-soft: #d9edf9;
+  --accent-text: #064e76;
+
+  --today-border: #f0a500;
+  --today-background: #fff5d9;
+
+  --danger: #b42318;
+  --shadow: 0 10px 30px rgba(22, 35, 48, 0.08);
+
+  color: var(--text-primary);
+  background: var(--page-background);
+}
+
+:root[data-theme="dark"] {
+  --page-background: #0c1117;
+  --surface: #151c24;
+  --surface-secondary: #1b242e;
+  --surface-hover: #233342;
+
+  --text-primary: #f1f5f8;
+  --text-secondary: #b8c4ce;
+  --text-muted: #82909c;
+
+  --border: #2e3a45;
+  --border-strong: #465666;
+
+  --accent: #41a7e8;
+  --accent-hover: #69baf0;
+  --accent-soft: #173b52;
+  --accent-text: #bce5ff;
+
+  --today-border: #f3b53f;
+  --today-background: #3e3219;
+
+  --danger: #ff8a80;
+  --shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--page-background);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--page-background);
+  color: var(--text-primary);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+.dashboard {
+  width: min(1200px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-header h1 {
+  margin: 0.25rem 0;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+.dashboard-header__label {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-header__description {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.dashboard-header__actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.theme-button,
+.logout-button,
+.rota-calendar__controls button {
+  min-height: 42px;
+  padding: 0.65rem 1rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.theme-button:hover,
+.rota-calendar__controls button:hover {
+  background: var(--surface-hover);
+}
+
+.logout-button {
+  color: var(--danger);
+}
+
+.rota-calendar {
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.rota-calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.rota-calendar__header h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1.7rem;
+}
+
+.rota-calendar__label {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rota-calendar__controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rota-calendar__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--surface-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.rota-calendar__weekday {
+  padding: 0.9rem 0.4rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  border-right: 1px solid var(--border);
+}
+
+.rota-calendar__weekday:last-child {
+  border-right: none;
+}
+
+.weekday-short {
+  display: none;
+}
+
+.rota-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.rota-calendar__day {
+  position: relative;
+  min-height: 120px;
+  padding: 0.75rem;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.rota-calendar__day:nth-child(7n) {
+  border-right: none;
+}
+
+.rota-calendar__day:nth-last-child(-n + 7) {
+  border-bottom: none;
+}
+
+.rota-calendar__day:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.rota-calendar__day--outside {
+  color: var(--text-muted);
+  background: var(--surface-secondary);
+}
+
+.rota-calendar__day--working {
+  background: var(--accent-soft);
+  box-shadow: inset 4px 0 0 var(--accent);
+  cursor: pointer;
+}
+
+.rota-calendar__day--working:hover {
+  background: var(--surface-hover);
+}
+
+.rota-calendar__day--today {
+  outline: 2px solid var(--today-border);
+  outline-offset: -2px;
+  background: var(--today-background);
+}
+
+.rota-calendar__day--today.rota-calendar__day--working {
+  background: var(--accent-soft);
+}
+
+.rota-calendar__date-number {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.rota-calendar__today-label {
+  display: inline-block;
+  margin-top: 0.35rem;
+  color: var(--today-border);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rota-calendar__shift {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 1rem;
+  color: var(--accent-text);
+  font-size: 0.78rem;
+}
+
+.rota-calendar__shift strong {
+  font-size: 0.9rem;
+}
+
+.shift-details,
+.empty-state {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.shift-details__heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shift-details__heading h2 {
+  margin: 0.25rem 0 1.25rem;
+}
+
+.shift-details__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.shift-details__item {
+  padding: 1rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.shift-details__item span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.shift-details__item strong {
+  overflow-wrap: anywhere;
+}
+
+.shift-details__item--notes {
+  grid-column: 1 / -1;
+}
+
+.shift-details__empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 850px) {
+  .dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-header__actions {
+    width: 100%;
+  }
+
+  .dashboard-header__actions button {
+    flex: 1;
+  }
+
+  .shift-details__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weekday-full {
+    display: none;
+  }
+
+  .weekday-short {
+    display: inline;
+  }
+
+  .rota-calendar__day {
+    min-height: 90px;
+    padding: 0.5rem;
+  }
+
+  .rota-calendar__shift span {
+    display: none;
+  }
+
+  .rota-calendar__shift strong {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard {
+    width: min(100% - 1rem, 1200px);
+    padding-top: 0.5rem;
+  }
+
+  .dashboard-header,
+  .rota-calendar__header {
+    padding: 1rem;
+  }
+
+  .rota-calendar__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rota-calendar__controls {
+    width: 100%;
+  }
+
+  .rota-calendar__controls button {
+    flex: 1;
+    padding: 0.55rem 0.3rem;
+  }
+
+  .rota-calendar__weekday {
+    padding: 0.65rem 0.2rem;
+  }
+
+  .rota-calendar__day {
+    min-height: 68px;
+    padding: 0.35rem;
+  }
+
+  .rota-calendar__date-number {
+    font-size: 0.8rem;
+  }
+
+  .rota-calendar__shift {
+    margin-top: 0.45rem;
+  }
+
+  .rota-calendar__shift strong {
+    font-size: 0.58rem;
+  }
+
+  .shift-details__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
