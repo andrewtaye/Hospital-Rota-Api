@@ -1,3 +1,4 @@
+
 from django.conf import settings
 from django.db import models
 
@@ -16,6 +17,15 @@ class Department(models.Model):
 
 
 class Shift(models.Model):
+    COMPLETION_STATUS_CHOICES = [
+        ("scheduled", "Scheduled"),
+        ("completed", "Completed"),
+        ("left_early", "Left Early"),
+        ("sick", "Left Sick"),
+        ("absent", "Absent"),
+        ("cancelled", "Cancelled"),
+    ]
+
     employee = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -41,7 +51,27 @@ class Shift(models.Model):
 
     end_time = models.TimeField()
 
+    actual_start_time = models.TimeField(
+        blank=True,
+        null=True,
+    )
+
+    actual_end_time = models.TimeField(
+        blank=True,
+        null=True,
+    )
+
+    completion_status = models.CharField(
+        max_length=30,
+        choices=COMPLETION_STATUS_CHOICES,
+        default="scheduled",
+    )
+
     notes = models.TextField(
+        blank=True,
+    )
+
+    attendance_notes = models.TextField(
         blank=True,
     )
 
@@ -62,3 +92,4 @@ class Shift(models.Model):
             f"{self.department.name} | "
             f"{self.date}"
         )
+

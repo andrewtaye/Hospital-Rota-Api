@@ -1,48 +1,39 @@
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
 import Calendar from "../components/Calendar";
+import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
 
 function Dashboard() {
   const [shifts, setShifts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedShift, setSelectedShift] = useState(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("theme") || "dark";
   });
 
   const navigate = useNavigate();
-  const menuRef = useRef(null);
+
+  // -------------------------
+  // Theme
+  // -------------------------
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute(
+      "data-theme",
+      theme
+    );
+
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target)
-      ) {
-        setIsMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
-    };
-  }, []);
+  // -------------------------
+  // Load shifts
+  // -------------------------
 
   useEffect(() => {
     async function loadShifts() {
@@ -82,13 +73,19 @@ function Dashboard() {
     loadShifts();
   }, [navigate]);
 
+  // -------------------------
+  // Theme toggle
+  // -------------------------
+
   function handleThemeChange() {
     setTheme((currentTheme) =>
       currentTheme === "dark" ? "light" : "dark"
     );
-
-    setIsMenuOpen(false);
   }
+
+  // -------------------------
+  // Logout
+  // -------------------------
 
   function handleLogout() {
     localStorage.removeItem("accessToken");
@@ -97,150 +94,223 @@ function Dashboard() {
     navigate("/login");
   }
 
+  // -------------------------
+  // Loading
+  // -------------------------
+
   if (isLoading) {
     return (
-      <main className="dashboard">
+      <main className="dashboard-loading">
         <p>Loading shifts...</p>
       </main>
     );
   }
 
+  // -------------------------
+  // Error
+  // -------------------------
+
   if (error) {
     return (
-      <main className="dashboard">
+      <main className="dashboard-error">
         <p>{error}</p>
 
-        <button type="button" onClick={handleLogout}>
+        <button
+          type="button"
+          onClick={handleLogout}
+        >
           Logout
         </button>
       </main>
     );
   }
 
+  // -------------------------
+  // Dashboard
+  // -------------------------
+
   return (
-    <main className="dashboard">
-      <header className="dashboard-header">
-        <div>
-          <p className="dashboard-header__label">
-            Staff scheduling
-          </p>
+    <div className="app-layout">
+      <Sidebar />
 
-          <h1>My Rota</h1>
+      <div className="dashboard">
+        <Navbar
+          theme={theme}
+          onThemeChange={handleThemeChange}
+          onLogout={handleLogout}
+        />
 
-          <p className="dashboard-header__description">
-            View your scheduled shifts and working days.
-          </p>
-        </div>
+        <main className="dashboard-content">
 
-        <div
-          className="dashboard-menu"
-          ref={menuRef}
-        >
-          <button
-            type="button"
-            className="dashboard-menu__button"
-            onClick={() =>
-              setIsMenuOpen((currentValue) => !currentValue)
-            }
-            aria-expanded={isMenuOpen}
-            aria-label="Open dashboard menu"
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+          {/* -------------------------
+              Welcome
+          ------------------------- */}
 
-          {isMenuOpen && (
-            <div className="dashboard-menu__dropdown">
-              <button
-                type="button"
-                onClick={handleThemeChange}
-              >
-                {theme === "dark"
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"}
-              </button>
+          <section className="dashboard-welcome">
+            <div>
+              <p className="dashboard-welcome__label">
+                Staff scheduling
+              </p>
 
-              <button
-                type="button"
-                className="dashboard-menu__logout"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
+              <h1>My Rota</h1>
+
+              <p className="dashboard-welcome__description">
+                View your scheduled shifts and working days.
+              </p>
             </div>
-          )}
-        </div>
-      </header>
+          </section>
 
-      {shifts.length === 0 ? (
-        <section className="empty-state">
-          <h2>No scheduled shifts</h2>
+          {/* -------------------------
+              Overview cards
+          ------------------------- */}
 
-          <p>
-            You currently have no shifts assigned to you.
-          </p>
-        </section>
-      ) : (
-        <>
-          <Calendar
-            shifts={shifts}
-            onSelectShift={setSelectedShift}
-          />
+          <section className="dashboard-stats">
+            <div className="stat-card">
+              <span className="stat-card__label">
+                Total shifts
+              </span>
 
-          <section className="shift-details">
-            <div className="shift-details__heading">
-              <p>Selected day</p>
-              <h2>Shift details</h2>
+              <strong className="stat-card__value">
+                {shifts.length}
+              </strong>
+
+              <span className="stat-card__description">
+                Scheduled shifts
+              </span>
             </div>
 
-            {selectedShift ? (
-              <div className="shift-details__grid">
-                <div className="shift-details__item">
-                  <span>Date</span>
-                  <strong>{selectedShift.date}</strong>
+            <div className="stat-card">
+              <span className="stat-card__label">
+                Next shift
+              </span>
+
+              <strong className="stat-card__value">
+                {shifts.length > 0
+                  ? shifts[0].date
+                  : "None"}
+              </strong>
+
+              <span className="stat-card__description">
+                Upcoming working day
+              </span>
+            </div>
+
+            <div className="stat-card">
+              <span className="stat-card__label">
+                Department
+              </span>
+
+              <strong className="stat-card__value">
+                {shifts.length > 0
+                  ? shifts[0].department
+                  : "—"}
+              </strong>
+
+              <span className="stat-card__description">
+                Current assignment
+              </span>
+            </div>
+          </section>
+
+          {/* -------------------------
+              Main dashboard area
+          ------------------------- */}
+
+          {shifts.length === 0 ? (
+            <section className="empty-state">
+              <h2>No scheduled shifts</h2>
+
+              <p>
+                You currently have no shifts assigned to you.
+              </p>
+            </section>
+          ) : (
+            <section className="dashboard-main-grid">
+
+              {/* Calendar */}
+
+              <div className="dashboard-calendar">
+                <Calendar
+                  shifts={shifts}
+                  onSelectShift={setSelectedShift}
+                />
+              </div>
+
+              {/* Shift details */}
+
+              <section className="shift-details">
+                <div className="shift-details__heading">
+                  <p>Selected day</p>
+
+                  <h2>Shift details</h2>
                 </div>
 
-                <div className="shift-details__item">
-                  <span>Start time</span>
-                  <strong>
-                    {selectedShift.start_time.slice(0, 5)}
-                  </strong>
-                </div>
+                {selectedShift ? (
+                  <div className="shift-details__grid">
 
-                <div className="shift-details__item">
-                  <span>End time</span>
-                  <strong>
-                    {selectedShift.end_time.slice(0, 5)}
-                  </strong>
-                </div>
+                    <div className="shift-details__item">
+                      <span>Date</span>
 
-                <div className="shift-details__item">
-                  <span>Department</span>
-                  <strong>
-                    {selectedShift.department}
-                  </strong>
-                </div>
+                      <strong>
+                        {selectedShift.date}
+                      </strong>
+                    </div>
 
-                {selectedShift.notes && (
-                  <div className="shift-details__item shift-details__item--notes">
-                    <span>Notes</span>
-                    <strong>{selectedShift.notes}</strong>
+                    <div className="shift-details__item">
+                      <span>Start time</span>
+
+                      <strong>
+                        {selectedShift.start_time.slice(
+                          0,
+                          5
+                        )}
+                      </strong>
+                    </div>
+
+                    <div className="shift-details__item">
+                      <span>End time</span>
+
+                      <strong>
+                        {selectedShift.end_time.slice(
+                          0,
+                          5
+                        )}
+                      </strong>
+                    </div>
+
+                    <div className="shift-details__item">
+                      <span>Department</span>
+
+                      <strong>
+                        {selectedShift.department}
+                      </strong>
+                    </div>
+
+                    {selectedShift.notes && (
+                      <div className="shift-details__item shift-details__item--notes">
+                        <span>Notes</span>
+
+                        <strong>
+                          {selectedShift.notes}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="shift-details__empty">
+                    <p>
+                      Select a highlighted working day
+                      to view the shift information.
+                    </p>
                   </div>
                 )}
-              </div>
-            ) : (
-              <p className="shift-details__empty">
-                Select a highlighted working day to view
-                the shift information.
-              </p>
-            )}
-          </section>
-        </>
-      )}
-    </main>
+              </section>
+            </section>
+          )}
+        </main>
+      </div>
+    </div>
   );
 }
 
 export default Dashboard;
-
