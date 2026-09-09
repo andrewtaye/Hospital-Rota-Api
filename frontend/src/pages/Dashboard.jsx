@@ -1,26 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
-import Calendar from "../components/Calendar";
+
+import CreateShiftDrawer from "../components/CreateShiftDrawer";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import WeeklySchedule from "../components/WeeklySchedule";
 
 function Dashboard() {
+  const navigate = useNavigate();
+
+  const [currentUser, setCurrentUser] = useState(null);
+
   const [shifts, setShifts] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedShift, setSelectedShift] = useState(null);
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("theme") || "dark";
   });
 
-  const navigate = useNavigate();
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // -------------------------
+  const [selectedShiftCell, setSelectedShiftCell] =
+    useState(null);
+
+  const [isCreateShiftOpen, setIsCreateShiftOpen] =
+    useState(false);
+
+  const accessToken =
+    localStorage.getItem("accessToken");
+
+  // --------------------------------------------------
   // Theme
-  // -------------------------
+  // --------------------------------------------------
 
   useEffect(() => {
     document.documentElement.setAttribute(
@@ -31,61 +48,17 @@ function Dashboard() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // -------------------------
-  // Load shifts
-  // -------------------------
-
-  useEffect(() => {
-    async function loadShifts() {
-      const accessToken =
-        localStorage.getItem("accessToken");
-
-      if (!accessToken) {
-        navigate("/login");
-        return;
-      }
-
-      try {
-        const response = await api.get("shifts/", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        setShifts(response.data);
-      } catch (requestError) {
-        console.error(requestError);
-
-        if (requestError.response?.status === 401) {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-
-          navigate("/login");
-          return;
-        }
-
-        setError("Could not load shifts.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadShifts();
-  }, [navigate]);
-
-  // -------------------------
-  // Theme toggle
-  // -------------------------
-
   function handleThemeChange() {
     setTheme((currentTheme) =>
-      currentTheme === "dark" ? "light" : "dark"
+      currentTheme === "dark"
+        ? "light"
+        : "dark"
     );
   }
 
-  // -------------------------
+  // --------------------------------------------------
   // Logout
-  // -------------------------
+  // --------------------------------------------------
 
   function handleLogout() {
     localStorage.removeItem("accessToken");
@@ -94,40 +67,277 @@ function Dashboard() {
     navigate("/login");
   }
 
-  // -------------------------
+  // --------------------------------------------------
+  // Load dashboard data
+  // --------------------------------------------------
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      if (!accessToken) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const headers = {
+          Authorization: `Bearer ${accessToken}`,
+        };
+
+        const [
+          currentUserResponse,
+          shiftsResponse,
+          employeesResponse,
+          departmentsResponse,
+        ] = await Promise.all([
+          api.get("me/", { headers }),
+          api.get("shifts/", { headers }),
+          api.get("employees/", { headers }),
+          api.get("departments/", { headers }),
+        ]);
+
+        setCurrentUser(
+          currentUserResponse.data
+        );
+
+        setShifts(
+          shiftsResponse.data
+        );
+
+        setEmployees(
+          employeesResponse.data
+        );
+
+        setDepartments(
+          departmentsResponse.data
+        );
+
+      } catch (requestError) {
+        console.error(requestError);
+
+        if (
+          requestError.response?.status === 401
+        ) {
+          handleLogout();
+          return;
+        }
+
+        setError(
+          "Could not load rota data."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadDashboardData();
+  }, [accessToken, navigate]);
+
+  // --------------------------------------------------
+  // Manager detection
+  // --------------------------------------------------
+
+  const isManager =
+    currentUser?.is_manager ?? false;
+
+  // --------------------------------------------------
+  // Ward
+  // --------------------------------------------------
+
+  const wardName =
+    currentUser?.ward?.name ||
+    "No ward assigned";
+
+  // --------------------------------------------------
+  // Format date
+  // --------------------------------------------------
+
+  function formatDate(date) {
+    const year =
+      date.getFullYear();
+
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+    const day = String(
+      date.getDate()
+    ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  // --------------------------------------------------
+  // Current week
+  // --------------------------------------------------
+
+  const weekDays = useMemo(() => {
+    const today = new Date();
+
+    const day =
+      today.getDay();
+
+    const mondayDifference =
+      day === 0
+        ? -6
+        : 1 - day;
+
+    const monday =
+      new Date(today);
+
+    monday.setDate(
+      today.getDate() +
+        mondayDifference +
+        weekOffset * 7
+    );
+
+    monday.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+    return Array.from(
+      { length: 7 },
+      (_, index) => {
+        const date =
+          new Date(monday);
+
+        date.setDate(
+          monday.getDate() +
+            index
+        );
+
+        return {
+          label:
+            date.toLocaleDateString(
+              "en-GB",
+              {
+                weekday: "short",
+              }
+            ),
+
+          fullLabel:
+            date.toLocaleDateString(
+              "en-GB",
+              {
+                weekday: "long",
+              }
+            ),
+
+          dayNumber:
+            date.getDate(),
+
+          month:
+            date.toLocaleDateString(
+              "en-GB",
+              {
+                month: "short",
+              }
+            ),
+
+          date:
+            formatDate(date),
+        };
+      }
+    );
+  }, [weekOffset]);
+
+  // --------------------------------------------------
+  // Weekly navigation
+  // --------------------------------------------------
+
+  function goToPreviousWeek() {
+    setWeekOffset(
+      (current) =>
+        current - 1
+    );
+  }
+
+  function goToNextWeek() {
+    setWeekOffset(
+      (current) =>
+        current + 1
+    );
+  }
+
+  function goToCurrentWeek() {
+    setWeekOffset(0);
+  }
+
+  // --------------------------------------------------
+  // Manager clicks empty cell
+  // --------------------------------------------------
+
+  function handleCreateShift({
+    employee,
+    date,
+    shiftType,
+  }) {
+    if (!isManager) {
+      return;
+    }
+
+    setSelectedShiftCell({
+      employee,
+      date,
+      shiftType,
+    });
+
+    setIsCreateShiftOpen(true);
+  }
+
+  // --------------------------------------------------
+  // Add newly created shift to board
+  // --------------------------------------------------
+
+  function handleShiftCreated(
+    newShift
+  ) {
+    setShifts(
+      (currentShifts) => [
+        ...currentShifts,
+        newShift,
+      ]
+    );
+  }
+
+  // --------------------------------------------------
   // Loading
-  // -------------------------
+  // --------------------------------------------------
 
   if (isLoading) {
     return (
       <main className="dashboard-loading">
-        <p>Loading shifts...</p>
+        <p>Loading rota...</p>
       </main>
     );
   }
 
-  // -------------------------
+  // --------------------------------------------------
   // Error
-  // -------------------------
+  // --------------------------------------------------
 
   if (error) {
     return (
       <main className="dashboard-error">
-        <p>{error}</p>
+        <div>
+          <p>{error}</p>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-        >
-          Logout
-        </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
       </main>
     );
   }
 
-  // -------------------------
+  // --------------------------------------------------
   // Dashboard
-  // -------------------------
+  // --------------------------------------------------
 
   return (
     <div className="app-layout">
@@ -135,180 +345,109 @@ function Dashboard() {
 
       <div className="dashboard">
         <Navbar
+          user={currentUser}
           theme={theme}
-          onThemeChange={handleThemeChange}
-          onLogout={handleLogout}
+          onThemeChange={
+            handleThemeChange
+          }
+          onLogout={
+            handleLogout
+          }
         />
 
         <main className="dashboard-content">
 
-          {/* -------------------------
-              Welcome
-          ------------------------- */}
+          <div className="ward-heading">
+            <span>
+              {wardName}
+            </span>
+          </div>
 
-          <section className="dashboard-welcome">
+          <section className="weekly-rota-heading">
             <div>
               <p className="dashboard-welcome__label">
                 Staff scheduling
               </p>
 
-              <h1>My Rota</h1>
+              <h1>
+                Weekly Rota
+              </h1>
 
               <p className="dashboard-welcome__description">
-                View your scheduled shifts and working days.
+                View staff coverage across day and
+                night shifts.
               </p>
+            </div>
+
+            <div className="weekly-rota-controls">
+              <button
+                type="button"
+                onClick={
+                  goToPreviousWeek
+                }
+              >
+                ← Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  goToCurrentWeek
+                }
+              >
+                This week
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  goToNextWeek
+                }
+              >
+                Next →
+              </button>
             </div>
           </section>
 
-          {/* -------------------------
-              Overview cards
-          ------------------------- */}
-
-          <section className="dashboard-stats">
-            <div className="stat-card">
-              <span className="stat-card__label">
-                Total shifts
-              </span>
-
-              <strong className="stat-card__value">
-                {shifts.length}
-              </strong>
-
-              <span className="stat-card__description">
-                Scheduled shifts
-              </span>
-            </div>
-
-            <div className="stat-card">
-              <span className="stat-card__label">
-                Next shift
-              </span>
-
-              <strong className="stat-card__value">
-                {shifts.length > 0
-                  ? shifts[0].date
-                  : "None"}
-              </strong>
-
-              <span className="stat-card__description">
-                Upcoming working day
-              </span>
-            </div>
-
-            <div className="stat-card">
-              <span className="stat-card__label">
-                Department
-              </span>
-
-              <strong className="stat-card__value">
-                {shifts.length > 0
-                  ? shifts[0].department
-                  : "—"}
-              </strong>
-
-              <span className="stat-card__description">
-                Current assignment
-              </span>
-            </div>
-          </section>
-
-          {/* -------------------------
-              Main dashboard area
-          ------------------------- */}
-
-          {shifts.length === 0 ? (
-            <section className="empty-state">
-              <h2>No scheduled shifts</h2>
-
-              <p>
-                You currently have no shifts assigned to you.
-              </p>
-            </section>
-          ) : (
-            <section className="dashboard-main-grid">
-
-              {/* Calendar */}
-
-              <div className="dashboard-calendar">
-                <Calendar
-                  shifts={shifts}
-                  onSelectShift={setSelectedShift}
-                />
-              </div>
-
-              {/* Shift details */}
-
-              <section className="shift-details">
-                <div className="shift-details__heading">
-                  <p>Selected day</p>
-
-                  <h2>Shift details</h2>
-                </div>
-
-                {selectedShift ? (
-                  <div className="shift-details__grid">
-
-                    <div className="shift-details__item">
-                      <span>Date</span>
-
-                      <strong>
-                        {selectedShift.date}
-                      </strong>
-                    </div>
-
-                    <div className="shift-details__item">
-                      <span>Start time</span>
-
-                      <strong>
-                        {selectedShift.start_time.slice(
-                          0,
-                          5
-                        )}
-                      </strong>
-                    </div>
-
-                    <div className="shift-details__item">
-                      <span>End time</span>
-
-                      <strong>
-                        {selectedShift.end_time.slice(
-                          0,
-                          5
-                        )}
-                      </strong>
-                    </div>
-
-                    <div className="shift-details__item">
-                      <span>Department</span>
-
-                      <strong>
-                        {selectedShift.department}
-                      </strong>
-                    </div>
-
-                    {selectedShift.notes && (
-                      <div className="shift-details__item shift-details__item--notes">
-                        <span>Notes</span>
-
-                        <strong>
-                          {selectedShift.notes}
-                        </strong>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="shift-details__empty">
-                    <p>
-                      Select a highlighted working day
-                      to view the shift information.
-                    </p>
-                  </div>
-                )}
-              </section>
-            </section>
-          )}
+          <WeeklySchedule
+            employees={
+              employees
+            }
+            shifts={
+              shifts
+            }
+            weekDays={
+              weekDays
+            }
+            isManager={
+              isManager
+            }
+            onCreateShift={
+              handleCreateShift
+            }
+          />
         </main>
       </div>
+
+      {isCreateShiftOpen && (
+        <CreateShiftDrawer
+          shiftData={
+            selectedShiftCell
+          }
+          onClose={() => {
+            setIsCreateShiftOpen(
+              false
+            );
+
+            setSelectedShiftCell(
+              null
+            );
+          }}
+          onCreated={
+            handleShiftCreated
+          }
+        />
+      )}
     </div>
   );
 }
